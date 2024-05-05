@@ -1,6 +1,95 @@
 import { Link } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Web3 from 'web3';
 
 function AppNavbar(){
+    let navigate = useNavigate();
+    const [web3, setWeb3] = useState(null);
+    const [accounts, setAccounts] = useState([]);
+    const [balance, setBalance] = useState('0');
+    const [symbol, setSymbol] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [connected, setConnected] = useState(false);
+  
+    const networks = [
+      { id: 1, name: "Ethereum Mainnet" ,symbol: "ETH",cid:1n},
+      { id: 11155111, name: "Sepolia Testnet" ,symbol: "SepoliaETH",cid:11155111n}
+    ];
+    const connectWallet = async () => {
+        setIsLoading(true); // Start loading
+        if (window.ethereum) {
+          try {
+            const web3Instance = new Web3(window.ethereum);
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const accounts = await web3Instance.eth.getAccounts();
+            setWeb3(web3Instance);
+            setAccounts(accounts);
+            fetchBalance(accounts[0]);
+            console.log(accounts);
+            setConnected(true); 
+            updateSymbol(await web3Instance.eth.getChainId());
+            console.log(await web3Instance.eth.getChainId());
+    
+          } catch (error) {
+            console.error("Error connecting to MetaMask", error);
+          } finally {
+            setIsLoading(false); // Stop loading irrespective of the outcome
+          }
+        } else {
+          alert("Please install MetaMask to use this feature.");
+        }
+      };
+    
+      const disconnectWallet = () => {
+        setAccounts([]);
+        setBalance('0');
+        setSymbol("");
+        setConnected(false); 
+      };
+    
+      const fetchBalance = async (account) => {
+        if (!web3) return;
+        const balance = await web3.eth.getBalance(account);
+        
+        setBalance(web3.utils.fromWei(balance, 'ether'));
+      };
+      const updateSymbol = (chainId) => {
+        const network = networks.find(network => network.cid === chainId);
+        console.log("inside update symbol");
+        console.log(network);
+        if (network) {
+          setSymbol(network.symbol);
+        } else {
+          setSymbol("");
+        }
+      };
+      const switchNetwork = async (chainId) => {
+        disconnectWallet();
+        
+        if (!chainId) return; 
+        
+        const hexChainId = `0x${Number(chainId).toString(16)}`;
+    
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: hexChainId }],
+          });
+        } catch (error) {
+          console.error("Error switching network: ", error);
+          if (error.code === 4902){
+            alert("Add this Network in Your Metamask Wallet")
+          }
+        }
+        connectWallet();
+      };
+    
+      useEffect(() => {
+        if (accounts.length > 0) {
+          fetchBalance(accounts[0]);
+        }
+      }, [accounts]);
     return(
         <nav className="flex w-full flex-wrap justify-between bg-[#131313] items-center px-5 py-3 h-[70px] sticky top-0 z-[1020]">
             {/* w-screen h-screen flex flex-row justify-center items-center bg-[#171616] */}
@@ -89,7 +178,16 @@ function AppNavbar(){
                     </button>
                 </div>
                 <div className="">
-                    <button type="button" className="px-3 py-2 text-[16px] text-center bg-[rgb(49,28,49)] text-[#fc72ff] font-[535] rounded-full hover:opacity-80">Connect</button>
+                    
+                {connected ? (
+                <button type="button" 
+                className="px-3 py-2 text-[16px] text-center bg-[rgb(49,28,49)] text-[#fc72ff] font-[535] rounded-full hover:opacity-80" 
+                onClick={disconnectWallet}>Disconnect</button>
+            ) : (
+                <button type="button" 
+                    className="px-3 py-2 text-[16px] text-center bg-[rgb(49,28,49)] text-[#fc72ff] font-[535] rounded-full hover:opacity-80" 
+                    onClick={connectWallet}>Connect</button>
+            )}
                 </div>
             </div>
         </nav>

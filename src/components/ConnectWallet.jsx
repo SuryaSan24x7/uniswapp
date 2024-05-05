@@ -1,0 +1,45 @@
+import { ethers } from "ethers";
+const network = "testnet";
+
+async function ConnectWallet() {
+	
+	// ETHERS PROVIDER
+	const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+
+	// SWITCH TO SEPOLIA TEST NETWORK
+	console.log(`- Switching network to the sepolia ${network}...🟠`);
+	let chainId;
+	
+
+	await window.ethereum.request({
+		method: "wallet_addEthereumChain",
+		params: [
+			{
+				chainName: `Sepolia test network`,
+				chainId: "0xaa36a7",
+				nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+				rpcUrls: [`https://sepolia.drpc.org`],
+				blockExplorerUrls: [`https://sepolia.etherscan.io/`],
+			},
+		],
+	});
+	console.log("- Switched ✅");
+
+	// CONNECT TO ACCOUNT
+	console.log("- Connecting wallet...🟠");
+	let selectedAccount;
+	await provider
+		.send("eth_requestAccounts", [])
+		.then((accounts) => {
+			selectedAccount = accounts[0];
+			console.log(`- Selected account: ${selectedAccount} ✅`);
+		})
+		.catch((connectError) => {
+			console.log(`- ${connectError.message.toString()}`);
+			return;
+		});
+
+	return [selectedAccount, provider, network];
+}
+
+export default ConnectWallet;
