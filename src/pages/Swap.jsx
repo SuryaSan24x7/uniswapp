@@ -4,7 +4,33 @@ import AppNavbar from "../components/AppNavbar";
 function Swap() {
     const [inputPayValue, setInputPayValue] = useState(""); 
     const [inputReceiveValue, setInputReceiveValue] = useState(""); 
+    const [walletData, setWalletData] = useState();
+const [account, setAccount] = useState();
+const [network, setNetwork] = useState();
+const [Connected, setWalletConnected] = useState(false);
+async function connectWallet() {
+  if (account !== undefined) {
+    setConnectTextSt(`🔌 Account ${account} already connected ⚡ ✅`);
+  } else {
+    const wData = await ConnectWallet();
 
+    let newAccount = wData[0];
+    let newNetwork = wData[2];
+    if (newAccount !== undefined) {
+      setConnectTextSt(`🔌 Account ${newAccount} connected ⚡ ✅`);
+      setWalletData(wData);
+      setAccount(newAccount);
+      setNetwork(newNetwork);
+      setWalletConnected(true);
+    }
+  }
+}
+async function disconnectWallet() {
+  setAccount();
+  setWalletData();
+  setConnectTextSt("🔌 Connect Wallet");
+  setWalletConnected(false);
+}
     const handlePayChange = (event) => { 
         const input = event.target.value;
         // Allow only numbers 
@@ -23,7 +49,7 @@ function Swap() {
 
     return(
         <>
-        <AppNavbar/>
+        <AppNavbar connectWallet={connectWallet} disconnectWallet={disconnectWallet}/>
         <div className="w-screen h-screen flex flex-row text-white justify-center items-start bg-[#131313] py-12">
             <div>
                 
